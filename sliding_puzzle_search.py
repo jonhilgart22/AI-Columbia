@@ -8,6 +8,7 @@ class State():
     Output: Path taken to reach goal, time taken to reach goal, steps taken to reach goal"""
     def __init__(self,board):
         self.board = self.board_box(board) ### fetch a 3x3 matrix that represents that board
+        self.queue = [] ##new queue for every move
         self.finished_board = np.array([[0,1,2],
                                        [3,4,5],
                                        [6,7,8]]) ### finished board
@@ -15,7 +16,7 @@ class State():
         self.number_of_moves = 0 ##number of moves taken
         ### add the initial board as a visited state
         self.visited_states.append(self.board.flatten())
-        min_idx = np.where(self.board == np.min(self.board)) ## find the starting indexes on the board
+        min_idx = np.where(self.board == 0) ## find the starting indexes on the board
         row_num = min_idx[0][0]
         col_num = min_idx[1][0]
         self.curr_row = row_num
@@ -42,22 +43,44 @@ class State():
         """Take out item from the queue once a move has been completed."""
         self.number_of_moves +=1 ## another move
         move = self.queue.pop() ## get the last item out of the queue
+        print(move,' move to take')
         number_of_move_taken, move_taken = move[0],move[1] ## break into the text and the number
-        self.path_taken.insert(0,move) ## keep track of the moves taken
-        self.board_swap(move_taken,'actual')
+        pointer_of_potential_move = np.where(self.board == number_of_move_taken)
         current_pointer = np.where(self.board == 0) ## find the index of where the zero is on the board
-        ### change the current row and col pointers
-        self.curr_row  = current_pointer[0][0]
-        self.curr_col = current_pointer[1][0]
-        return (move,'move taken')
+        ## compare the pointer of the potential move and where the current zero is to ensure it is a legal move
+        potential_move_row = pointer_of_potential_move [0][0]
+        potential_move_col = pointer_of_potential_move [1][0]
+        current_pointer_row = current_pointer[0][0]
+        current_pointer_col = current_pointer[1][0]
+        ### make sure that the proposed move is legal
+        if (potential_move_row +1 or potential_move_row -1 ) == current_pointer_row:
+             if potential_move_col==current_pointer_col:
+                self.board_swap(move_taken,'actual')
+                self.curr_row  = current_pointer[0][0] ## change the pointer after completing the move
+                self.curr_col = current_pointer[1][0]
+                self.path_taken.insert(0,move) ## keep track of the moves taken
+        elif (potential_move_col +1 or potential_move_col -1 ) == current_pointer_col:
+            if potential_move_row==current_pointer_row:
+                self.board_swap(move_taken,'actual')
+                self.curr_row  = current_pointer[0][0] ## change the pointer after completing the move
+                self.curr_col = current_pointer[1][0]
+                self.path_taken.insert(0,move) ## keep track of the moves taken
+        else:
+            self.curr_row  = current_pointer[0][0] ## to the zero position
+            self.curr_col = current_pointer[1][0]
+
     def size(self):
         return len(self.queue)
     def move(self): # Move once
         """Move the pieces on the board in the UDLR sequence (up down left right)."""
-        self.queue = [] ##new queue for every move
+        current_pointer = np.where(self.board == 0) ## make sure we have the correct pointer
+        self.curr_row  = current_pointer[0][0] ## to the zero position
+        self.curr_col = current_pointer[1][0]
+
         try:
             if self.curr_row-1 <0:
                 raise Exception
+            print(self.board,' BOARD before up ')
             up = self.board[self.curr_row-1,self.curr_col] ## Up
             if self.arreq_in_list(self.board_swap('up','test').flatten(),self.visited_states)==False: ### do not allow the algo to visit states again
                 self.enqueue((up,'up'))
@@ -91,7 +114,6 @@ class State():
             if self.curr_col+1>2:
                 raise Exception
             right = self.board[self.curr_row,self.curr_col+1]
-            #print(self.board_swap('right','test') , 'testing right')
             if self.arreq_in_list(self.board_swap('right','test').flatten(),self.visited_states)==False: ### do not allow the algo to visit states again
                 self.enqueue((right,'right'))
             else:
@@ -146,17 +168,26 @@ class State():
     def solve(self):
         """solve the board"""
         while np.array_equal(self.board.flatten(),self.finished_board.flatten())==False:
+            print(self.board,'board before move')
             self.move()
             self.dequeue()
-            print(self.board)
+            print(self.queue,'queue')
+            print(self.board,'board after move')
+            print(self.curr_col,'current col')
+            print(self.curr_row,'curr row')
+
         print('YOU SOLVED IT!')
         print("It took {} moves to solve".format(self.number_of_moves ))
         print("The path taken was {}".format(self.path_taken))
         return(self.board, ' You found a board!')
+
 if __name__ =='__main__':
-    t = [1,2,5,3,4,0,6,7,8]
-    s = State(t)
-    s.solve()
-    x = [3,1,2,0,4,5,6,7,8]
-    p = State(x)
-    p.solve()
+    # t = [1,2,5,3,4,0,6,7,8]
+    # s = State(t)
+    # s.solve()
+    # x = [3,1,2,0,4,5,6,7,8]
+    # p = State(x)
+    # p.solve()
+    z = [1,3,2,4,6,5,7,8,0]
+    e = State(z)
+    e.solve()
